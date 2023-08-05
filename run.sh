@@ -2,7 +2,7 @@
 
 function start_tfreg {
     docker build . -t "rnrtfreg:local"
-
+    echo "running tfreg container"
     docker run -d --rm \
         --name tfreg \
         --link psqldb:psqldb \
@@ -13,6 +13,7 @@ function start_tfreg {
 
 
 function start_psql {
+    echo "running psql container"
     docker run -d --rm \
         --name psqldb \
         -e "POSTGRES_PASSWORD=rnrtfreg" \
