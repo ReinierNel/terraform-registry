@@ -45,10 +45,10 @@ class Package(BaseModel):
     shasums_url: str
     shasums_signature_url: str
     shasum: str
-    signing_keys_id: int
+    signing_keys_id: UUID4
     os: str
     arch: str
-    version_id: int
+    version_id: UUID4
 
 
 class GPG_Public_Keys(BaseModel):

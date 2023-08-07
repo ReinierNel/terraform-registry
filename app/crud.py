@@ -2,6 +2,10 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from pydantic import UUID4
 
+"""
+Terraform Provider Protocol
+"""
+
 
 def get_version_namespace_provider(db: Session, namespace: str, provider: str):
     fetch_version_data = (
@@ -16,8 +20,8 @@ def get_version_namespace_provider(db: Session, namespace: str, provider: str):
     for version in fetch_version_data:
         platforms = []
         fetch_provider_files = (
-            db.query(models.Provider_Package)
-            .filter(models.Provider_Package.version_id == version.id)
+            db.query(models.Package)
+            .filter(models.Package.version_id == version.id)
             .all()
         )
 
@@ -52,16 +56,16 @@ def get_provider_os_arch_version(
     )
 
     fetch_provider_data = (
-        db.query(models.Provider_Package)
-        .filter(models.Provider_Package.version_id == fetch_version_data.id)
-        .where(models.Provider_Package.os == operating_system)
-        .where(models.Provider_Package.arch == architecture)
+        db.query(models.Package)
+        .filter(models.Package.version_id == fetch_version_data.id)
+        .where(models.Package.os == operating_system)
+        .where(models.Package.arch == architecture)
         .one_or_none()
     )
 
     fetch_signing_keys = (
-        db.query(models.Signing_Keys)
-        .where(models.Signing_Keys.id == fetch_provider_data.signing_keys_id)
+        db.query(models.GPG_Public_Keys)
+        .where(models.GPG_Public_Keys.id == fetch_provider_data.signing_keys_id)
         .one_or_none()
     )
 
@@ -87,10 +91,11 @@ def get_provider_os_arch_version(
     return output
 
 
-# crud components
+"""
+Versions
+"""
 
 
-# version
 def get_all_versions(db: Session):
     fech = db.query(models.Versions).all()
     output = []
@@ -129,7 +134,14 @@ def add_version(db: Session, version: schemas.Version):
     db.add(db_version)
     db.commit()
     db.refresh(db_version)
-    return db_version
+    output = schemas.Version(
+        id=db_version.id,
+        namespace=db_version.namespace,
+        provider=db_version.protocols,
+        version=db_version.version,
+        protocols=db_version.protocols,
+    )
+    return output
 
 
 def update_version(db: Session, version: schemas.Version):
@@ -151,7 +163,15 @@ def update_version(db: Session, version: schemas.Version):
 
     db.commit()
     db.refresh(fetch)
-    return fetch
+
+    output = schemas.Version(
+        id=fetch.id,
+        namespace=fetch.namespace,
+        provider=fetch.protocols,
+        version=fetch.version,
+        protocols=fetch.protocols,
+    )
+    return output
 
 
 def delete_version_by_id(db: Session, id: UUID4):
@@ -163,19 +183,11 @@ def delete_version_by_id(db: Session, id: UUID4):
     return True
 
 
-def get_signing_keys_by_public_id(db: Session, pub_id: str):
-    fetch = (
-        db.query(models.Signing_Keys)
-        .where(models.Signing_Keys.key_id == pub_id)
-        .one_or_none()
-    )
-    output = schemas.Signing_Keys(
-        id=fetch.id, key_id=fetch.key_id, ascii_armor=fetch.ascii_armor
-    )
-    return output
+"""
+Packages
+"""
 
 
-# provider package
 def get_all_package(db: Session):
     fetch = db.query(models.Package).all()
     output = []
@@ -230,7 +242,19 @@ def add_package(db: Session, version: schemas.Package):
     db.add(db_version)
     db.commit()
     db.refresh(db_version)
-    return db_version
+    output = schemas.Package(
+        id=db_version.id,
+        filename=db_version.filename,
+        download_url=db_version.download_url,
+        shasums_url=db_version.shasums_url,
+        shasums_signature_url=db_version.shasums_signature_url,
+        shasum=db_version.shasum,
+        signing_keys_id=db_version.signing_keys_id,
+        os=db_version.os,
+        arch=db_version.arch,
+        version_id=db_version.version_id,
+    )
+    return output
 
 
 def update_package_by_id(db: Session, version: schemas.Package):
@@ -250,7 +274,19 @@ def update_package_by_id(db: Session, version: schemas.Package):
 
     db.commit()
     db.refresh(fetch)
-    return fetch
+
+    output = schemas.Package(
+        filename=fetch.filename,
+        download_url=fetch.download_url,
+        shasums_url=fetch.shasums_url,
+        shasums_signature_url=fetch.shasums_signature_url,
+        shasum=fetch.shasum,
+        signing_keys_id=fetch.signing_keys_id,
+        os=fetch.os,
+        arch=fetch.arch,
+        version_id=fetch.version_id,
+    )
+    return output
 
 
 def delete_package_by_id(db: Session, id: UUID4):
@@ -262,13 +298,17 @@ def delete_package_by_id(db: Session, id: UUID4):
     return True
 
 
-# gpg public keys
+"""
+gpg public keys
+"""
+
+
 def get_all_gpg_public_keys(db: Session):
     fetch = db.query(models.GPG_Public_Keys).all()
     output = []
     for data in fetch:
         output.append(
-            schemas.Package(
+            schemas.GPG_Public_Keys(
                 id=data.id, key_id=data.key_id, ascii_armor=data.ascii_armor
             )
         )
@@ -296,7 +336,12 @@ def add_gpg_public_key(db: Session, gpg_public_key: schemas.GPG_Public_Keys):
     db.add(db_version)
     db.commit()
     db.refresh(db_version)
-    return db_version
+
+    output = schemas.GPG_Public_Keys(
+        id=db_version.id, key_id=db_version.key_id, ascii_armor=db_version.ascii_armor
+    )
+
+    return output
 
 
 def update_gpg_public_key_by_id(db: Session, gpg_public_key: schemas.GPG_Public_Keys):
@@ -311,7 +356,12 @@ def update_gpg_public_key_by_id(db: Session, gpg_public_key: schemas.GPG_Public_
 
     db.commit()
     db.refresh(fetch)
-    return fetch
+
+    output = schemas.GPG_Public_Keys(
+        id=fetch.id, key_id=fetch.key_id, ascii_armor=fetch.ascii_armor
+    )
+
+    return output
 
 
 def delete_gpg_public_key_by_id(db: Session, id: UUID4):

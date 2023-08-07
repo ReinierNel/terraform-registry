@@ -7,7 +7,7 @@ function start_tfreg {
         --name tfreg \
         --link psqldb:psqldb \
         -e "TF_REG_SQL_SERVER_CONNECTION_STRING=postgresql://rnrtfreg:rnrtfreg@psqldb/rnrtfreg" \
-        -p 8443:8443 \
+        -p 443:8443 \
         rnrtfreg:local
 }
 

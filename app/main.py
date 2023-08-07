@@ -64,8 +64,11 @@ def provider_package(
     return fetch
 
 
-# Management CURD
-# Versions
+"""
+Versions
+"""
+
+
 @app.get("/v1/versions/getall", response_model=list[schemas.Version], tags=["Versions"])
 def get_all_versions(db: Session = Depends(get_db)):
     return crud.get_all_versions(db=db)
@@ -78,16 +81,18 @@ def get_versions_by_id(id: UUID4, db: Session = Depends(get_db)):
 
 @app.post("/v1/versions/add", tags=["Versions"], status_code=201)
 def add_versions(version: schemas.Version, db: Session = Depends(get_db)):
-    if crud.add_version(db=db, version=version):
-        return {"details": "201 Created"}
+    data = crud.add_version(db=db, version=version)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
 # response_model=schemas.Versions
 @app.put("/v1/versions/update", tags=["Versions"])
 def update_versions_by_id(version: schemas.Version, db: Session = Depends(get_db)):
-    if crud.update_version(db=db, version=version):
-        return {"details": "200 OK"}
+    data = crud.update_version(db=db, version=version)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
@@ -98,14 +103,18 @@ def delete_versions_by_id(id: UUID4, db: Session = Depends(get_db)):
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
-# Provider_Package
+"""
+Package
+"""
+
+
 @app.get(
     "/v1/package/getall",
     response_model=list[schemas.Package],
     tags=["Package"],
 )
 def get_all_package(db: Session = Depends(get_db)):
-    return crud.get_all_provider_package(db=db)
+    return crud.get_all_package(db=db)
 
 
 @app.get("/v1/package/get", response_model=schemas.Package, tags=["Package"])
@@ -113,18 +122,21 @@ def get_package_by_id(id: UUID4, db: Session = Depends(get_db)):
     return crud.get_package_by_id(db=db, id=id)
 
 
-@app.post("/v1/package/add", tags=["Package"], status_code=201)
+@app.post(
+    "/v1/package/add", response_model=schemas.Package, tags=["Package"], status_code=201
+)
 def add_package(version: schemas.Package, db: Session = Depends(get_db)):
-    if crud.add_package(db=db, version=version):
-        return {"details": "201 Created"}
+    data = crud.add_package(db=db, version=version)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
-# response_model=schemas.Versions
-@app.put("/v1/package/update", tags=["Package"])
+@app.put("/v1/package/update", response_model=schemas.Package, tags=["Package"])
 def update_package_by_id(version: schemas.Package, db: Session = Depends(get_db)):
-    if crud.update_package_by_id(db=db, version=version):
-        return {"details": "200 OK"}
+    data = crud.update_package_by_id(db=db, version=version)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
@@ -154,20 +166,33 @@ def get_provider_gpg_public_key_by_id(id: UUID4, db: Session = Depends(get_db)):
     return crud.get_provider_gpg_public_key_by_id(db=db, id=id)
 
 
-@app.post("/v1/gpg-public-key/add", tags=["GPG Public Keys"], status_code=201)
-def add_gpg_public_key(version: schemas.GPG_Public_Keys, db: Session = Depends(get_db)):
-    if crud.add_gpg_public_key(db=db, version=version):
-        return {"details": "201 Created"}
+@app.post(
+    "/v1/gpg-public-key/add",
+    response_model=schemas.GPG_Public_Keys,
+    tags=["GPG Public Keys"],
+    status_code=201,
+)
+def add_gpg_public_key(
+    gpg_public_key: schemas.GPG_Public_Keys, db: Session = Depends(get_db)
+):
+    data = crud.add_gpg_public_key(db=db, gpg_public_key=gpg_public_key)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
 # response_model=schemas.Versions
-@app.put("/v1/gpg-public-key/update", tags=["GPG Public Keys"])
+@app.put(
+    "/v1/gpg-public-key/update",
+    response_model=schemas.GPG_Public_Keys,
+    tags=["GPG Public Keys"],
+)
 def update_gpg_public_key_by_id(
-    version: schemas.GPG_Public_Keys, db: Session = Depends(get_db)
+    gpg_public_key: schemas.GPG_Public_Keys, db: Session = Depends(get_db)
 ):
-    if crud.update_gpg_public_key_by_id(db=db, version=version):
-        return {"details": "200 OK"}
+    data = crud.update_gpg_public_key_by_id(db=db, gpg_public_key=gpg_public_key)
+    if data is not None:
+        return data
     raise HTTPException(status_code=500, detail="500 Internal Server Error")
 
 
