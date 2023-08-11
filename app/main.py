@@ -25,7 +25,7 @@ def service_discovery():
 
 
 @app.get(
-    "/v1/providers/{namespace}/{provider}/versions",
+    "/terraform/providers/v1/{namespace}/{provider}/versions",
     response_model=schemas.Versions,
     tags=["Provider Registry Protocol"],
 )
@@ -39,7 +39,7 @@ def available_versions(namespace: str, provider: str, db: Session = Depends(get_
 
 
 @app.get(
-    "/v1/providers/{namespace}/{provider}/{version}/download/{operating_system}/{architecture}",
+    "/terraform/providers/v1/{namespace}/{provider}/{version}/download/{operating_system}/{architecture}",
     response_model=schemas.Provider_Package,
     tags=["Provider Registry Protocol"],
 )
