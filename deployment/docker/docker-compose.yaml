@@ -1,0 +1,20 @@
+services:
+  terraform-registry-api:
+    build: ../../
+    ports:
+      - "443:8443"
+    environment:
+      - "TF_REG_SQL_SERVER_CONNECTION_STRING=postgresql://rnrtfreg:rnrtfreg@psqldb/rnrtfreg" # change to to psql server
+    links:
+      - "psqldb:psqldb"
+  psqldb:
+    ports:
+      - "5432:5432"
+    environment:
+      - "POSTGRES_PASSWORD=rnrtfreg"
+      - "POSTGRES_USER=rnrtfreg"
+      - "POSTGRES_DB=rnrtfreg"
+      - "PGDATA=/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ../../tmp/psql:/var/lib/postgresql/data # update this path to where you would like to persost the PSQL DBs
+    image: postgres:15.3-alpine3.18

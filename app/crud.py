@@ -3,15 +3,15 @@ from . import models, schemas
 from pydantic import UUID4
 
 """
-Terraform Provider Protocol
+Provider
 """
 
 
 def get_version_namespace_provider(db: Session, namespace: str, provider: str):
     fetch_version_data = (
-        db.query(models.Versions)
-        .filter(models.Versions.namespace == namespace)
-        .where(models.Versions.provider == provider)
+        db.query(models.Provider_Versions)
+        .filter(models.Provider_Versions.namespace == namespace)
+        .where(models.Provider_Versions.provider == provider)
         .all()
     )
 
@@ -20,8 +20,8 @@ def get_version_namespace_provider(db: Session, namespace: str, provider: str):
     for version in fetch_version_data:
         platforms = []
         fetch_provider_files = (
-            db.query(models.Package)
-            .filter(models.Package.version_id == version.id)
+            db.query(models.Provider_Package)
+            .filter(models.Provider_Package.version_id == version.id)
             .all()
         )
 
@@ -48,37 +48,39 @@ def get_provider_os_arch_version(
     architecture: str,
 ):
     fetch_version_data = (
-        db.query(models.Versions)
-        .filter(models.Versions.namespace == namespace)
-        .where(models.Versions.provider == provider)
-        .where(models.Versions.version == version)
+        db.query(models.Provider_Versions)
+        .filter(models.Provider_Versions.namespace == namespace)
+        .where(models.Provider_Versions.provider == provider)
+        .where(models.Provider_Versions.version == version)
         .one_or_none()
     )
 
     fetch_provider_data = (
-        db.query(models.Package)
-        .filter(models.Package.version_id == fetch_version_data.id)
-        .where(models.Package.os == operating_system)
-        .where(models.Package.arch == architecture)
+        db.query(models.Provider_Package)
+        .filter(models.Provider_Package.version_id == fetch_version_data.id)
+        .where(models.Provider_Package.os == operating_system)
+        .where(models.Provider_Package.arch == architecture)
         .one_or_none()
     )
 
     fetch_signing_keys = (
-        db.query(models.GPG_Public_Keys)
-        .where(models.GPG_Public_Keys.id == fetch_provider_data.signing_keys_id)
+        db.query(models.Provider_GPG_Public_Keys)
+        .where(
+            models.Provider_GPG_Public_Keys.id == fetch_provider_data.signing_keys_id
+        )
         .one_or_none()
     )
 
-    output = {
-        "protocols": fetch_version_data.protocols.split(","),
-        "os": fetch_provider_data.os,
-        "arch": fetch_provider_data.arch,
-        "filename": fetch_provider_data.filename,
-        "download_url": fetch_provider_data.download_url,
-        "shasums_url": fetch_provider_data.shasums_url,
-        "shasums_signature_url": fetch_provider_data.shasums_signature_url,
-        "shasum": fetch_provider_data.shasum,
-        "signing_keys": {
+    output = schemas.Provider_Packages(
+        protocols=fetch_version_data.protocols.split(","),
+        os=fetch_provider_data.os,
+        arch=fetch_provider_data.arch,
+        filename=fetch_provider_data.filename,
+        download_url=fetch_provider_data.download_url,
+        shasums_url=fetch_provider_data.shasums_url,
+        shasums_signature_url=fetch_provider_data.shasums_signature_url,
+        shasum=fetch_provider_data.shasum,
+        signing_keys={
             "gpg_public_keys": [
                 {
                     "key_id": fetch_signing_keys.key_id,
@@ -86,7 +88,7 @@ def get_provider_os_arch_version(
                 }
             ]
         },
-    }
+    )
 
     return output
 
@@ -97,11 +99,11 @@ Versions
 
 
 def get_all_versions(db: Session):
-    fech = db.query(models.Versions).all()
+    fech = db.query(models.Provider_Versions).all()
     output = []
     for data in fech:
         output.append(
-            schemas.Version(
+            schemas.Provider_Version(
                 version=data.version,
                 namespace=data.namespace,
                 id=data.id,
@@ -113,8 +115,12 @@ def get_all_versions(db: Session):
 
 
 def get_version_by_id(db: Session, id: UUID4):
-    fetch = db.query(models.Versions).where(models.Versions.id == id).one_or_none()
-    output = schemas.Version(
+    fetch = (
+        db.query(models.Provider_Versions)
+        .where(models.Provider_Versions.id == id)
+        .one_or_none()
+    )
+    output = schemas.Provider_Version(
         version=fetch.version,
         namespace=fetch.namespace,
         id=fetch.id,
@@ -124,8 +130,8 @@ def get_version_by_id(db: Session, id: UUID4):
     return output
 
 
-def add_version(db: Session, version: schemas.Version):
-    db_version = models.Versions(
+def add_version(db: Session, version: schemas.Provider_Version):
+    db_version = models.Provider_Versions(
         namespace=version.namespace,
         provider=version.provider,
         version=version.version,
@@ -134,7 +140,7 @@ def add_version(db: Session, version: schemas.Version):
     db.add(db_version)
     db.commit()
     db.refresh(db_version)
-    output = schemas.Version(
+    output = schemas.Provider_Version(
         id=db_version.id,
         namespace=db_version.namespace,
         provider=db_version.protocols,
@@ -144,8 +150,8 @@ def add_version(db: Session, version: schemas.Version):
     return output
 
 
-def update_version(db: Session, version: schemas.Version):
-    db_version = models.Versions(
+def update_version(db: Session, version: schemas.Provider_Version):
+    db_version = models.Provider_Versions(
         namespace=version.namespace,
         provider=version.provider,
         version=version.version,
@@ -154,7 +160,9 @@ def update_version(db: Session, version: schemas.Version):
     )
 
     fetch = (
-        db.query(models.Versions).where(models.Versions.id == version.id).one_or_none()
+        db.query(models.Provider_Versions)
+        .where(models.Provider_Versions.id == version.id)
+        .one_or_none()
     )
     fetch.namespace = db_version.namespace
     fetch.provider = db_version.provider
@@ -164,10 +172,10 @@ def update_version(db: Session, version: schemas.Version):
     db.commit()
     db.refresh(fetch)
 
-    output = schemas.Version(
+    output = schemas.Provider_Version(
         id=fetch.id,
         namespace=fetch.namespace,
-        provider=fetch.protocols,
+        provider=fetch.provider,
         version=fetch.version,
         protocols=fetch.protocols,
     )
@@ -175,7 +183,9 @@ def update_version(db: Session, version: schemas.Version):
 
 
 def delete_version_by_id(db: Session, id: UUID4):
-    db.query(models.Versions).filter(models.Versions.id == id).delete()
+    db.query(models.Provider_Versions).filter(
+        models.Provider_Versions.id == id
+    ).delete()
     try:
         db.commit()
     except:
@@ -189,11 +199,11 @@ Packages
 
 
 def get_all_package(db: Session):
-    fetch = db.query(models.Package).all()
+    fetch = db.query(models.Provider_Package).all()
     output = []
     for data in fetch:
         output.append(
-            schemas.Package(
+            schemas.Provider_Package(
                 id=data.id,
                 filename=data.filename,
                 download_url=data.download_url,
@@ -210,8 +220,12 @@ def get_all_package(db: Session):
 
 
 def get_package_by_id(db: Session, id: UUID4):
-    fetch = db.query(models.Package).where(models.Package.id == id).one_or_none()
-    output = schemas.Package(
+    fetch = (
+        db.query(models.Provider_Package)
+        .where(models.Provider_Package.id == id)
+        .one_or_none()
+    )
+    output = schemas.Provider_Package(
         id=fetch.id,
         filename=fetch.filename,
         download_url=fetch.download_url,
@@ -226,8 +240,8 @@ def get_package_by_id(db: Session, id: UUID4):
     return output
 
 
-def add_package(db: Session, version: schemas.Package):
-    db_version = models.Package(
+def add_package(db: Session, version: schemas.Provider_Package):
+    db_version = models.Provider_Package(
         id=version.id,
         filename=version.filename,
         download_url=version.download_url,
@@ -242,7 +256,7 @@ def add_package(db: Session, version: schemas.Package):
     db.add(db_version)
     db.commit()
     db.refresh(db_version)
-    output = schemas.Package(
+    output = schemas.Provider_Package(
         id=db_version.id,
         filename=db_version.filename,
         download_url=db_version.download_url,
@@ -257,9 +271,11 @@ def add_package(db: Session, version: schemas.Package):
     return output
 
 
-def update_package_by_id(db: Session, version: schemas.Package):
+def update_package_by_id(db: Session, version: schemas.Provider_Package):
     fetch = (
-        db.query(models.Package).where(models.Package.id == version.id).one_or_none()
+        db.query(models.Provider_Package)
+        .where(models.Provider_Package.id == version.id)
+        .one_or_none()
     )
 
     fetch.filename = (version.filename,)
@@ -275,7 +291,7 @@ def update_package_by_id(db: Session, version: schemas.Package):
     db.commit()
     db.refresh(fetch)
 
-    output = schemas.Package(
+    output = schemas.Provider_Package(
         filename=fetch.filename,
         download_url=fetch.download_url,
         shasums_url=fetch.shasums_url,
@@ -290,7 +306,7 @@ def update_package_by_id(db: Session, version: schemas.Package):
 
 
 def delete_package_by_id(db: Session, id: UUID4):
-    db.query(models.Package).filter(models.Package.id == id).delete()
+    db.query(models.Provider_Package).filter(models.Provider_Package.id == id).delete()
     try:
         db.commit()
     except:
@@ -304,11 +320,11 @@ gpg public keys
 
 
 def get_all_gpg_public_keys(db: Session):
-    fetch = db.query(models.GPG_Public_Keys).all()
+    fetch = db.query(models.Provider_GPG_Public_Keys).all()
     output = []
     for data in fetch:
         output.append(
-            schemas.GPG_Public_Keys(
+            schemas.Provider_GPG_Public_Keys(
                 id=data.id, key_id=data.key_id, ascii_armor=data.ascii_armor
             )
         )
@@ -317,18 +333,18 @@ def get_all_gpg_public_keys(db: Session):
 
 def get_provider_gpg_public_key_by_id(db: Session, id: UUID4):
     fetch = (
-        db.query(models.GPG_Public_Keys)
-        .where(models.GPG_Public_Keys.id == id)
+        db.query(models.Provider_GPG_Public_Keys)
+        .where(models.Provider_GPG_Public_Keys.id == id)
         .one_or_none()
     )
-    output = schemas.GPG_Public_Keys(
+    output = schemas.Provider_GPG_Public_Keys(
         id=fetch.id, key_id=fetch.key_id, ascii_armor=fetch.ascii_armor
     )
     return output
 
 
-def add_gpg_public_key(db: Session, gpg_public_key: schemas.GPG_Public_Keys):
-    db_version = models.GPG_Public_Keys(
+def add_gpg_public_key(db: Session, gpg_public_key: schemas.Provider_GPG_Public_Keys):
+    db_version = models.Provider_GPG_Public_Keys(
         id=gpg_public_key.id,
         key_id=gpg_public_key.key_id,
         ascii_armor=gpg_public_key.ascii_armor,
@@ -337,17 +353,19 @@ def add_gpg_public_key(db: Session, gpg_public_key: schemas.GPG_Public_Keys):
     db.commit()
     db.refresh(db_version)
 
-    output = schemas.GPG_Public_Keys(
+    output = schemas.Provider_GPG_Public_Keys(
         id=db_version.id, key_id=db_version.key_id, ascii_armor=db_version.ascii_armor
     )
 
     return output
 
 
-def update_gpg_public_key_by_id(db: Session, gpg_public_key: schemas.GPG_Public_Keys):
+def update_gpg_public_key_by_id(
+    db: Session, gpg_public_key: schemas.Provider_GPG_Public_Keys
+):
     fetch = (
-        db.query(models.GPG_Public_Keys)
-        .where(models.GPG_Public_Keys.id == gpg_public_key.id)
+        db.query(models.Provider_GPG_Public_Keys)
+        .where(models.Provider_GPG_Public_Keys.id == gpg_public_key.id)
         .one_or_none()
     )
 
@@ -357,7 +375,7 @@ def update_gpg_public_key_by_id(db: Session, gpg_public_key: schemas.GPG_Public_
     db.commit()
     db.refresh(fetch)
 
-    output = schemas.GPG_Public_Keys(
+    output = schemas.Provider_GPG_Public_Keys(
         id=fetch.id, key_id=fetch.key_id, ascii_armor=fetch.ascii_armor
     )
 
@@ -365,7 +383,9 @@ def update_gpg_public_key_by_id(db: Session, gpg_public_key: schemas.GPG_Public_
 
 
 def delete_gpg_public_key_by_id(db: Session, id: UUID4):
-    db.query(models.GPG_Public_Keys).filter(models.GPG_Public_Keys.id == id).delete()
+    db.query(models.Provider_GPG_Public_Keys).filter(
+        models.Provider_GPG_Public_Keys.id == id
+    ).delete()
     try:
         db.commit()
     except:

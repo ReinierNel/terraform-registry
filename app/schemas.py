@@ -1,7 +1,10 @@
 from pydantic import BaseModel, validator, UUID4
 
+# Modules
 
-class Versions(BaseModel):
+
+# Provider
+class Provider_Versions(BaseModel):
     versions: list = [
         {
             "version": "0.1.0",
@@ -18,7 +21,7 @@ class Versions(BaseModel):
     ]
 
 
-class Provider_Package(BaseModel):
+class Provider_Packages(BaseModel):
     protocols: list[str]
     os: str
     arch: str
@@ -30,7 +33,7 @@ class Provider_Package(BaseModel):
     signing_keys: dict = {"gpg_public_keys": [{"key_id": "", "ascii_armor": ""}]}
 
 
-class Version(BaseModel):
+class Provider_Version(BaseModel):
     version: str
     namespace: str
     id: UUID4 = None
@@ -38,7 +41,7 @@ class Version(BaseModel):
     provider: str
 
 
-class Package(BaseModel):
+class Provider_Package(BaseModel):
     id: UUID4 = None
     filename: str
     download_url: str
@@ -51,7 +54,7 @@ class Package(BaseModel):
     version_id: UUID4
 
 
-class GPG_Public_Keys(BaseModel):
+class Provider_GPG_Public_Keys(BaseModel):
     id: UUID4 = None
     key_id: str
     ascii_armor: str
